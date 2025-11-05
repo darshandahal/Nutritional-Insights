@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nutritional Insights</title>
+  <!-- Tailwind CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css" rel="stylesheet" />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100">
+
+  <header class="bg-blue-600 p-4 text-white">
+    <h1 class="text-3xl font-semibold">Nutritional Insights</h1>
+  </header>
+
+  <main class="container mx-auto p-6">
+    <!-- Chart Section -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Explore Nutritional Insights</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-4 shadow-lg rounded-lg">
+          <h3 class="font-semibold">Bar Chart</h3>
+          <p class="text-sm text-gray-600">Average macronutrient content by diet type.</p>
+          <img src="/outputs/plots/avg_macros_bar.png" alt="Bar Chart" class="w-full h-48 object-contain">
+          <canvas id="barChart" class="w-full h-48"></canvas>
+        </div>
+
+        <div class="bg-white p-4 shadow-lg rounded-lg">
+          <h3 class="font-semibold">Scatter Plot</h3>
+          <p class="text-sm text-gray-600">Nutrient relationships (e.g., protein vs carbs).</p>
+          <img src="/outputs/plots/top5_scatter.png" alt="Scatter Plot" class="w-full h-48 object-contain">
+          <canvas id="scatterPlot" class="w-full h-48"></canvas>
+        </div>
+
+        <div class="bg-white p-4 shadow-lg rounded-lg">
+          <h3 class="font-semibold">Heatmap</h3>
+          <p class="text-sm text-gray-600">Nutrient correlations.</p>
+          <img src="/outputs/plots/avg_macros_heatmap.png" alt="Heatmap" class="w-full h-48 object-contain">
+          <div id="heatmap" class="w-full h-48"></div>
+        </div>
+
+        <div class="bg-white p-4 shadow-lg rounded-lg">
+          <h3 class="font-semibold">Pie Chart</h3>
+          <p class="text-sm text-gray-600">Recipe distribution by diet type.</p>
+          <canvas id="pieChart" class="w-full h-48"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Filters and Data Interaction</h2>
+      <div class="flex flex-wrap gap-4">
+        <input type="text" placeholder="Search by Diet Type" class="p-2 border rounded w-full sm:w-auto" />
+        <select class="p-2 border rounded w-full sm:w-auto">
+          <option value="all">All Diet Types</option>
+          <option value="vegan">Vegan</option>
+          <option value="keto">Keto</option>
+          <!-- Add more options -->
+        </select>
+      </div>
+    </section>
+
+    <!-- API Buttons -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">API Data Interaction</h2>
+      <div class="flex flex-wrap gap-4">
+        <button class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Get Nutritional Insights</button>
+        <button class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">Get Recipes</button>
+        <button class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">Get Clusters</button>
+      </div>
+    </section>
+
+    <!-- Pagination -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-4">Pagination</h2>
+      <div class="flex justify-center gap-2 mt-4">
+        <button class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Previous</button>
+        <button class="px-3 py-1 bg-blue-600 text-white rounded">1</button>
+        <button class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">2</button>
+        <button class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-blue-600 p-4 text-white text-center mt-10">
+    <p>&copy; 2025 Nutritional Insights. All Rights Reserved.</p>
+  </footer>
+
+  <!-- ========== JavaScript Section ========== -->
+  <script>
+    // Helper function to fetch JSON data
+    async function fetchJson(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      return res.json();
+    }
+
+    // Load default images on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDefaultImages();
+    });
+
+    // Function to load default plot images
+    function loadDefaultImages() {
+      // Load bar chart image
+      const barImg = document.createElement('img');
+      barImg.src = '/api/plots/avg_macros_bar.png';
+      barImg.className = 'w-full h-48 object-contain';
+      barImg.alt = 'Average Macros Bar Chart';
+      barImg.onerror = () => {
+        barImg.src = 'https://via.placeholder.com/400x300?text=No+Data+Available';
+      };
+      const barCanvas = document.getElementById('barChart');
+      barCanvas.parentElement.innerHTML = '<h3 class="font-semibold">Bar Chart</h3><p class="text-sm text-gray-600">Average macronutrient content by diet type.</p>';
+      barCanvas.parentElement.appendChild(barImg);
+
+      // Load scatter plot image
+      const scatterImg = document.createElement('img');
+      scatterImg.src = '/api/plots/top5_scatter.png';
+      scatterImg.className = 'w-full h-48 object-contain';
+      scatterImg.alt = 'Scatter Plot';
+      scatterImg.onerror = () => {
+        scatterImg.src = 'https://via.placeholder.com/400x300?text=No+Data+Available';
+      };
+      const scatterCanvas = document.getElementById('scatterPlot');
+      scatterCanvas.parentElement.innerHTML = '<h3 class="font-semibold">Scatter Plot</h3><p class="text-sm text-gray-600">Nutrient relationships (e.g., protein vs carbs).</p>';
+      scatterCanvas.parentElement.appendChild(scatterImg);
+
+      // Load heatmap image
+      const heatmapImg = document.createElement('img');
+      heatmapImg.src = '/api/plots/avg_macros_heatmap.png';
+      heatmapImg.className = 'w-full h-48 object-contain';
+      heatmapImg.alt = 'Heatmap';
+      heatmapImg.onerror = () => {
+        heatmapImg.src = 'https://via.placeholder.com/400x300?text=No+Data+Available';
+      };
+      const heatmapDiv = document.getElementById('heatmap');
+      heatmapDiv.innerHTML = '';
+      heatmapDiv.appendChild(heatmapImg);
+    }
+
+    // Attach event listeners to buttons
+    document.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent.includes('Get Nutritional Insights')) {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          const originalText = btn.textContent;
+          btn.textContent = 'Loading...';
+          try {
+            const data = await fetchJson('/api/insights');
+            console.log('Insights Data:', data);
+            renderBarChart(data);
+            alert('✅ Nutritional insights loaded! Check the bar chart.');
+          } catch (e) {
+            console.error('Error:', e);
+            alert('❌ Error loading insights: ' + e.message);
+          }
+          btn.textContent = originalText;
+          btn.disabled = false;
+        });
+      }
+
+      if (btn.textContent.includes('Get Recipes')) {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          const originalText = btn.textContent;
+          btn.textContent = 'Loading...';
+          try {
+            const top5 = await fetchJson('/api/recipes');
+            console.log('Top 5 Recipes:', top5);
+            displayRecipesTable(top5);
+            alert('✅ Top recipes loaded! Check the table below.');
+          } catch (e) {
+            console.error('Error:', e);
+            alert('❌ Error loading recipes: ' + e.message);
+          }
+          btn.textContent = originalText;
+          btn.disabled = false;
+        });
+      }
+
+      if (btn.textContent.includes('Get Clusters')) {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          const originalText = btn.textContent;
+          btn.textContent = 'Loading...';
+          try {
+            const clusters = await fetchJson('/api/clusters');
+            console.log('Clusters Data:', clusters);
+            displayClustersTable(clusters);
+            alert('✅ Clusters loaded! Check the table below.');
+          } catch (e) {
+            console.error('Error:', e);
+            alert('❌ Error loading clusters: ' + e.message);
+          }
+          btn.textContent = originalText;
+          btn.disabled = false;
+        });
+      }
+    });
+
+    // Render interactive Bar Chart using Chart.js
+    function renderBarChart(data) {
+      const barChartParent = document.getElementById('barChart') ? document.getElementById('barChart').parentElement : null;
+      if (!barChartParent) return;
+      
+      barChartParent.innerHTML = '<h3 class="font-semibold">Bar Chart</h3><p class="text-sm text-gray-600 mb-2">Average macronutrient content by diet type.</p><canvas id="barChart" class="w-full h-48"></canvas>';
+      
+      const ctx = document.getElementById('barChart').getContext('2d');
+      const labels = data.map(r => r.Diet_type || r.diet_type || r['Diet_type']);
+
+      const proteinKey = Object.keys(data[0]).find(k => /prot/i.test(k));
+      const carbKey = Object.keys(data[0]).find(k => /carb/i.test(k));
+      const fatKey = Object.keys(data[0]).find(k => /fat/i.test(k));
+
+      const proteins = data.map(r => Number(r[proteinKey] || 0));
+      const carbs = data.map(r => Number(r[carbKey] || 0));
+      const fats = data.map(r => Number(r[fatKey] || 0));
+
+      if (window._barChart) window._barChart.destroy();
+
+      window._barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Protein', data: proteins, backgroundColor: 'rgba(54, 162, 235, 0.6)' },
+            { label: 'Carbs', data: carbs, backgroundColor: 'rgba(255, 206, 86, 0.6)' },
+            { label: 'Fat', data: fats, backgroundColor: 'rgba(255, 99, 132, 0.6)' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: { x: { stacked: false }, y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    // Display recipes in a table
+    function displayRecipesTable(recipes) {
+      const mainElement = document.querySelector('main');
+      let tableSection = document.getElementById('recipes-table-section');
+      
+      if (!tableSection) {
+        tableSection = document.createElement('section');
+        tableSection.id = 'recipes-table-section';
+        tableSection.className = 'mb-8';
+        mainElement.appendChild(tableSection);
+      }
+
+      const recipeNameKey = Object.keys(recipes[0] || {}).find(k => /recipe.*name/i.test(k)) || 'Recipe_name';
+      const dietTypeKey = Object.keys(recipes[0] || {}).find(k => /diet.*type/i.test(k)) || 'Diet_type';
+      const proteinKey = Object.keys(recipes[0] || {}).find(k => /protein/i.test(k)) || 'Protein_g';
+      const cuisineKey = Object.keys(recipes[0] || {}).find(k => /cuisine/i.test(k)) || 'Cuisine_type';
+
+      const tableHTML = `
+        <h2 class="text-2xl font-semibold mb-4">Top High-Protein Recipes</h2>
+        <div class="bg-white p-4 rounded shadow overflow-x-auto">
+          <table class="min-w-full border">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="border px-4 py-2 text-left">Recipe Name</th>
+                <th class="border px-4 py-2 text-left">Diet Type</th>
+                <th class="border px-4 py-2 text-left">Protein (g)</th>
+                <th class="border px-4 py-2 text-left">Cuisine</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${recipes.slice(0, 15).map(r => `
+                <tr class="hover:bg-gray-50">
+                  <td class="border px-4 py-2">${r[recipeNameKey] || 'N/A'}</td>
+                  <td class="border px-4 py-2">${r[dietTypeKey] || 'N/A'}</td>
+                  <td class="border px-4 py-2">${r[proteinKey] || 'N/A'}</td>
+                  <td class="border px-4 py-2">${r[cuisineKey] || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      tableSection.innerHTML = tableHTML;
+    }
+
+    // Display clusters in a table
+    function displayClustersTable(clusters) {
+      const mainElement = document.querySelector('main');
+      let tableSection = document.getElementById('clusters-table-section');
+      
+      if (!tableSection) {
+        tableSection = document.createElement('section');
+        tableSection.id = 'clusters-table-section';
+        tableSection.className = 'mb-8';
+        mainElement.appendChild(tableSection);
+      }
+
+      const dietTypeKey = Object.keys(clusters[0] || {}).find(k => /diet.*type/i.test(k)) || 'Diet_type';
+      const cuisineKey = Object.keys(clusters[0] || {}).find(k => /cuisine/i.test(k)) || 'Cuisine_type';
+
+      const tableHTML = `
+        <h2 class="text-2xl font-semibold mb-4">Most Common Cuisine by Diet Type</h2>
+        <div class="bg-white p-4 rounded shadow">
+          <table class="min-w-full border">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="border px-4 py-2 text-left">Diet Type</th>
+                <th class="border px-4 py-2 text-left">Most Common Cuisine</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${clusters.map(c => `
+                <tr class="hover:bg-gray-50">
+                  <td class="border px-4 py-2">${c[dietTypeKey] || 'N/A'}</td>
+                  <td class="border px-4 py-2">${c[cuisineKey] || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      tableSection.innerHTML = tableHTML;
+    }
+  </script>
+</body>
+</html>
